@@ -8,7 +8,7 @@ from signature_extractor import *
 class protein_network:
     """
     class protein_network could be used to represent PPI (protein-protein interaction) networks both in graph and\
-        adjacency list forms
+        adjacency list forms;
 
     Attributes
     ----------
