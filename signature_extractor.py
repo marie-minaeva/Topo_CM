@@ -2,6 +2,12 @@ import pandas as pd
 
 
 def signature_extractor(file):
+    """
+    Function is used to calculate signatures out of differentially expressed genes;
+    :param file: a name of file with DE genes;
+    :return: two lists: one with up-regulated  and the other with down-regulated genes;
+    """
+
     # preprocessing data before
     # calculating up/down regulated genes
 
