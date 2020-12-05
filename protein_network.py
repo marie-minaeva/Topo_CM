@@ -70,8 +70,8 @@ class protein_network:
         # Set parameters
 
         my_genes = {
-            'up_genes': self.up_genes[:100],
-            'down_genes': self.down_genes[:100]
+            'up_genes': self.up_genes,
+            'down_genes': self.down_genes
         }
         genes_in_string = {
             'up_genes': [],
