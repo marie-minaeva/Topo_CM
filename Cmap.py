@@ -2,6 +2,7 @@ from metric_calculator import *
 from BD_signature_parser import *
 from scipy.spatial import distance
 import time
+from joblib import Parallel, delayed
 
 
 class TopoCMap:
@@ -29,51 +30,49 @@ class TopoCMap:
 
         metrics_up = centrality_metrics(args.infile, mode="up_genes", score=0.1).metric_calculator
         metrics_down = centrality_metrics(args.infile, mode="down_genes", score=0.1).metric_calculator
-        inf_scores_up = []
-        inf_scores_down = []
         # inf_scores_up.append(metrics_up.loc[0])
-        inf_scores_up.append([x[0] * x[1] for x in zip(metrics_up.loc[2], metrics_up.loc[3])])
+        inf_scores_up = [x[0] * x[1] for x in zip(metrics_up.loc[2], metrics_up.loc[3])]
         # inf_scores_down.append(metrics_down.loc[0])
-        inf_scores_down.append([x[0] * x[1] for x in zip(metrics_down.loc[2], metrics_down.loc[3])])
+        inf_scores_down = [x[0] * x[1] for x in zip(metrics_down.loc[2], metrics_down.loc[3])]
 
         self.inf_score_up = inf_scores_up
         self.inf_score_down = inf_scores_down
 
     @staticmethod
-    def current_scores(genes, inf_score, vector):
+    def current_scores(data):
 
         output = []
-        for ind_i, cur_gene in enumerate(vector[0]):
+        for ind_i, cur_gene in enumerate(data[2][0]):
             flag = 0
-            for ind_j, gene in enumerate(genes):
+            for ind_j, gene in enumerate(data[0]):
                 if gene == cur_gene:
                     try:
-                        output.append(inf_score[ind_i])
+                        output.append(data[1][ind_i])
                         break
                     except LookupError:
                         output.append(1.0)
                         break
                 else:
                     flag += 1
-            if flag == len(genes):
+            if flag == len(data[0]):
                 output.append(1.0)
 
         return output
 
     @staticmethod
-    def decomposition_1(genes, space):
+    def decomposition_1(data):
         vector = []
         out_genes = []
         out_vector = []
-        for sp_gene in space:
+        for sp_gene in data[1]:
             flag = 0
-            for ind, gene in enumerate(genes):
+            for ind, gene in enumerate(data[0]):
                 if sp_gene == gene:
                     out_genes.append(gene)
                     out_vector.append(1.0)
                 else:
                     flag += 1
-            if flag == len(genes):
+            if flag == len(data[0]):
                 out_genes.append(sp_gene)
                 out_vector.append(0.0)
         vector.append(out_genes)
@@ -87,14 +86,14 @@ class TopoCMap:
         for i in range(0, len(self.db), 2):
             start1 = time.time()
             set_1, set_2 = self.space_finding(self.db[i], self.db[i + 1])
-            vector_up_req = self.decomposition_1(self.up_request, set_1)
-            vector_down_db = self.decomposition_1(self.db[i + 1], set_1)
-            vector_down_req = self.decomposition_1(self.down_request, set_2)
-            vector_up_db = self.decomposition_1(self.db[i], set_2)
-            current_up_inf_score = self.current_scores(self.up_request, self.inf_score_up, vector_up_req)
-            current_down_inf_score = self.current_scores(self.down_request, self.inf_score_down, vector_down_req)
-            cos1 = distance.cosine(vector_up_req[1], vector_down_db[1], current_up_inf_score)
-            cos2 = distance.cosine(vector_down_req[1], vector_up_db[1], current_down_inf_score)
+            data = [(self.up_request, set_1), (self.db[i + 1], set_1), (self.down_request, set_2), (self.db[i], set_2)]
+            pool = Parallel(n_jobs=-1, pre_dispatch='all')
+            results = pool(delayed(self.decomposition_1)(dd) for dd in data)
+            data1 = [(self.up_request, self.inf_score_up, results[0]), (self.down_request, self.inf_score_down, results[2])]
+            pool1 = Parallel(n_jobs=-1, pre_dispatch='all')
+            results1 = pool1(delayed(self.current_scores)(dd) for dd in data1)
+            cos1 = distance.cosine(results[0][1], results[1][1], results1[0])
+            cos2 = distance.cosine(results[2][1], results[3][1], results1[1])
             end1 = time.time()
             cosine_dist.append(0.5 * (cos1 + cos2))
             print(i, ' ', 0.5 * (cos1 + cos2), ' ', end1 - start1)
@@ -125,7 +124,7 @@ class TopoCMap:
 start = time.time()
 bd_signatures, sig_names = BD_signature_parser("/Users/littlequeen/Downloads/CD_signatures_binary_42809.gmt")
 up_request, down_request = signature_extractor("~/Downloads/DE_heart_fb_deseq2_edger.txt")
-trial = TopoCMap(list(up_request), list(down_request), bd_signatures[0:1000], 'reverse')
+trial = TopoCMap(list(up_request), list(down_request), bd_signatures[0:2000], 'reverse')
 small_mol = trial.small_molec(sig_names, "~/Downloads/CD_signature_metadata.csv", "~/Downloads/Drugs_metadata.csv")
 end = time.time()
 print(end - start)
