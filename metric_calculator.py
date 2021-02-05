@@ -14,9 +14,9 @@ class centrality_metrics(protein_network):
         metrics = []
         self.creating_network()
         if self.mode == "up_genes":
-            metrics.append(self.up_genes)
+            metrics.append(self.up_genes + self.up_not_in_STRING)
         else:
-            metrics.append(self.down_genes)
+            metrics.append(self.down_genes + self.down_not_in_STRING)
         metrics.append([gene for gene in pagerank(self.graph)])
         metrics.append([gene for gene in betweenness(self.graph)[0]])
         #metrics.append([gene for gene in eigenvector(self.graph)[1]])

@@ -8,4 +8,5 @@ def BD_signature_parser(file):
         sig_names.append(line.split()[0])
 
     sig_names = list(set(sig_names))
+    print(len(signatures))
     return signatures, sig_names

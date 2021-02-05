@@ -56,6 +56,8 @@ class protein_network:
         self.mode = mode
         self.score = score
         self.graph = []
+        self.up_not_in_STRING = None
+        self.down_not_in_STRING = None
 
     def data_preprocessing(self, species=9606):
 
@@ -70,8 +72,8 @@ class protein_network:
         # Set parameters
 
         my_genes = {
-            'up_genes': self.up_genes,
-            'down_genes': self.down_genes
+            'up_genes': self.up_genes[:100],
+            'down_genes': self.down_genes[:100]
         }
         genes_in_string = {
             'up_genes': [],
@@ -106,8 +108,10 @@ class protein_network:
                 genes_in_string[self.mode].append(gene)
 
         if self.mode == 'up_genes':
+            self.up_not_in_STRING = [x for x in self.up_genes if x not in genes_in_string]
             self.up_genes = genes_in_string['up_genes']
         else:
+            self.down_not_in_STRING = [x for x in self.down_genes if x not in genes_in_string]
             self.down_genes = genes_in_string['down_genes']
 
         print(len(genes_in_string[self.mode]))
@@ -125,8 +129,8 @@ class protein_network:
         request_url = "/".join([string_api_url, output_format, method])
 
         my_genes = {
-            'up_genes': self.up_genes[:2000],
-            'down_genes': self.down_genes[:2000]
+            'up_genes': self.up_genes,
+            'down_genes': self.down_genes
         }
 
         # Set parameters
@@ -167,13 +171,13 @@ class protein_network:
         self.API_request()
         adja_list = []
         genes = {
-            'up_genes': self.up_genes[:2000],
-            'down_genes': self.down_genes[:2000]
+            'up_genes': self.up_genes[:1000],
+            'down_genes': self.down_genes[:1000]
         }
         if self.mode == "up_genes":
-            interactions = self.interactions_up[:2000]
+            interactions = self.interactions_up[:1000]
         else:
-            interactions = self.interactions_down[:2000]
+            interactions = self.interactions_down[:1000]
 
         for ind_i, line in enumerate(genes[self.mode]):
             adja_list.append([])
@@ -188,8 +192,12 @@ class protein_network:
             adja_list[ind_i] = tuple([genes[self.mode][ind_i]] + adja_list[ind_i])
 
         if self.mode == 'up_genes':
+            for gene in self.up_not_in_STRING:
+                adja_list.append((gene,))
             self.adjac_list_up = adja_list
         else:
+            for gene in self.down_not_in_STRING:
+                adja_list.append((gene,))
             self.adjac_list_down = adja_list
 
 
@@ -201,10 +209,10 @@ class protein_network:
 
         if self.mode == "up_genes":
             adj_list = self.adjac_list_up
-            gene_set = self.up_genes
+            gene_set = self.up_genes + self.up_not_in_STRING
         else:
             adj_list = self.adjac_list_down
-            gene_set = self.down_genes
+            gene_set = self.down_genes + self.down_not_in_STRING
 
         adj_list_int = []
         for ind_i, line in enumerate(adj_list):
@@ -227,7 +235,7 @@ class protein_network:
             print("Came here")
         else:
             graph = self.creating_network()
-
+        ## добавить директорию для записи
         if self.mode == "up_genes":
             graph.save("~/Topo_Camp/up_genes.gt")
         if self.mode == "down_genes":
