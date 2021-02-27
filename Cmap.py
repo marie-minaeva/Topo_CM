@@ -18,15 +18,12 @@ def decomposition( data):
         out_vector_2 = []
         for gene, val in data[j].items():
             if len(val) == 2:
-
                 out_vector_1.append(1.0)
                 out_vector_2.append(1.0)
             if len(val) == 1 and val[0] == 0:
-                print("Here 3")
                 out_vector_1.append(1.0)
                 out_vector_2.append(0.0)
             if len(val) == 1 and val[0] == 1:
-                print("Here 4")
                 out_vector_1.append(0.0)
                 out_vector_2.append(1.0)
 

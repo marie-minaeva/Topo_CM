@@ -1,14 +1,14 @@
 import Cmap
 import cholm_test
 import BD_signature_parser
-import signature_extractor
+from signature_extractor import *
 import pandas as pd
 import numpy as np
 
 up_request, down_request, FC_up, FC_down = signature_extractor("~/Downloads/DE_neuron_fb_deseq2_edger.txt")
 bd_signatures, sig_names = BD_signature_parser.BD_signature_parser("/Users/littlequeen/Downloads"
                                                                    "/CD_signatures_binary_42809.gmt")
-trial = Cmap.TopoCMap(up_request,  bd_signatures[:200], 'reverse', "~/Downloads/DE_neuron_fb_deseq2_edger.txt")
+trial = Cmap.TopoCMap(bd_signatures[:200], "reverse", "~/Downloads/DE_neuron_fb_deseq2_edger.txt")
 all_stat = []
 coeffs = [[1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]]
 
