@@ -1,3 +1,5 @@
+from cython.parallel import *
+
 cpdef list decomposition(list data):
     cdef list vector = []
     cdef list out_genes = []
@@ -6,16 +8,23 @@ cpdef list decomposition(list data):
     cdef int i, j
     for j in range(len(data)):
         out_genes = []
-        out_vector = []
-        for i in range(len(data[j][1])):
-
-            if data[j][1][i] in data[j][0]:
-                out_genes.append(data[j][1][i])
-                out_vector.append(1.0)
+        out_vector_1 = []
+        out_vector_2 = []
+        for gene, val in data[j].items():
+            print(val)
+            if len(val) == 2:
+                out_vector_1.append(1.0)
+                out_vector_2.append(1.0)
+            if len(val) == 1 and val[0] == 0:
+                out_vector_1.append(1.0)
+                out_vector_2.append(0.0)
+            if len(val) == 1 and val[0] == 1:
+                out_vector_1.append(0.0)
+                out_vector_2.append(1.0)
             else:
-                out_genes.append(data[j][1][i])
-                out_vector.append(0.0)
-        vector.append(out_genes)
-        vector.append(out_vector)
-    #print(vector)
+                out_vector_1.append(0.0)
+                out_vector_2.append(0.0)
+
+        vector.append(out_vector_1)
+        vector.append(out_vector_2)
     return vector
