@@ -1,7 +1,7 @@
 import requests
 import tqdm
 from graph_tool.all import *
-
+from collections import defaultdict
 from signature_extractor import *
 
 
@@ -46,18 +46,17 @@ class protein_network:
 
     """
 
-    def __init__(self, file, mode, score):
+    def __init__(self, score, genes, FC):
 
-        self.up_genes, self.down_genes = signature_extractor(file)
-        self.interactions_up = []
-        self.interactions_down = []
-        self.adjac_list_up = []
-        self.adjac_list_down = []
-        self.mode = mode
+        self.genes = genes
+        self.FC = dict(zip(self.genes, FC))
+        self.interactions = None
+        self.adjac_list = None
+        self.trust_array = None
+        self.trust_map = None
         self.score = score
-        self.graph = []
-        self.up_not_in_STRING = None
-        self.down_not_in_STRING = None
+        self.graph = None
+        self.not_in_STRING = None
 
     def data_preprocessing(self, species=9606):
 
@@ -71,16 +70,10 @@ class protein_network:
 
         # Set parameters
 
-        my_genes = {
-            'up_genes': self.up_genes[:100],
-            'down_genes': self.down_genes[:100]
-        }
-        genes_in_string = {
-            'up_genes': [],
-            'down_genes': []
-        }
+        my_genes = self.genes[:100]
+        genes_in_string = []
 
-        for gene in tqdm.tqdm(my_genes[self.mode]):
+        for gene in tqdm.tqdm(my_genes):
 
             params = {
 
@@ -105,16 +98,13 @@ class protein_network:
                     continue
 
             if flag:
-                genes_in_string[self.mode].append(gene)
+                genes_in_string.append(gene)
+        print(genes_in_string)
+        print(self.genes)
+        self.not_in_STRING = [x for x in self.genes if x not in genes_in_string]
+        self.genes = genes_in_string
 
-        if self.mode == 'up_genes':
-            self.up_not_in_STRING = [x for x in self.up_genes if x not in genes_in_string]
-            self.up_genes = genes_in_string['up_genes']
-        else:
-            self.down_not_in_STRING = [x for x in self.down_genes if x not in genes_in_string]
-            self.down_genes = genes_in_string['down_genes']
-
-        print(len(genes_in_string[self.mode]))
+        print(len(genes_in_string))
 
     def API_request(self):
 
@@ -128,16 +118,13 @@ class protein_network:
 
         request_url = "/".join([string_api_url, output_format, method])
 
-        my_genes = {
-            'up_genes': self.up_genes,
-            'down_genes': self.down_genes
-        }
+        my_genes = self.genes
 
         # Set parameters
 
         params = {
 
-            "identifiers": "%0d".join(my_genes[self.mode]),  # your protein
+            "identifiers": "%0d".join(my_genes),  # your protein
             "species": species,  # species NCBI identifier
             "caller_identity": "www.awesome_app.org"  # your app name
 
@@ -154,78 +141,83 @@ class protein_network:
             try:
                 p1, p2 = l[2], l[3]
                 # filter the interaction according to experimental score
-                experimental_score = float(l[10])
+                experimental_score = float(l[5])
                 interactions.append((p1, p2, experimental_score))
             except IndexError:
                 print("Getting an error")
                 print(response.text)
 
-        if self.mode == 'up_genes':
-            self.interactions_up = interactions
-        else:
-            self.interactions_down = interactions
+        self.interactions = interactions
 
 
     def creating_adj_list(self):
 
         self.API_request()
-        adja_list = []
-        genes = {
-            'up_genes': self.up_genes[:1000],
-            'down_genes': self.down_genes[:1000]
-        }
-        if self.mode == "up_genes":
-            interactions = self.interactions_up[:1000]
-        else:
-            interactions = self.interactions_down[:1000]
+        adja_list = defaultdict(list)
+        scores = defaultdict(lambda: defaultdict(list))
 
-        for ind_i, line in enumerate(genes[self.mode]):
-            adja_list.append([])
-            for ind_j, col in enumerate(genes[self.mode]):
-                for ind_k, inter in enumerate(interactions):
+        for ind_i, line in enumerate(self.genes):
+            #adja_list[self.genes[ind_i]].append([])
+            #scores.append([])
+            for ind_j, col in enumerate(self.genes):
+                for ind_k, inter in enumerate(self.interactions):
                     if line == inter[0] and col == inter[1] and float(inter[2]) >= self.score:
-                        if adja_list[ind_i] != [] and adja_list[ind_i][-1] != inter[1]:
-                            adja_list[ind_i].append(inter[1])
-                        elif adja_list[ind_i] == [] and inter[1] != "" and adja_list[ind_i - 1] != inter[1]:
-                            adja_list[ind_i].append(inter[1])
+                        if adja_list[self.genes[ind_i]] != [] and adja_list[self.genes[ind_i]] [-1] != inter[1]:
+                            adja_list[self.genes[ind_i]] .append(inter[1])
+                            scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
+                        elif adja_list[self.genes[ind_i]] == [] and inter[1] != "":
+                            adja_list[self.genes[ind_i]].append(inter[1])
+                            scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
 
-            adja_list[ind_i] = tuple([genes[self.mode][ind_i]] + adja_list[ind_i])
+            #adja_list[self.genes[ind_i]] = list(set(adja_list[self.genes[ind_i]]))
 
-        if self.mode == 'up_genes':
-            for gene in self.up_not_in_STRING:
-                adja_list.append((gene,))
-            self.adjac_list_up = adja_list
-        else:
-            for gene in self.down_not_in_STRING:
-                adja_list.append((gene,))
-            self.adjac_list_down = adja_list
+        for gene in self.not_in_STRING:
+            for gene_1 in self.genes + self.not_in_STRING:
+                adja_list[gene] = []
+                scores[gene][gene_1] = []
+        self.adjac_list = adja_list
+        self.trust_array = scores
+
 
 
     def creating_network(self):
 
         self.creating_adj_list()
+        gene_set = self.genes + self.not_in_STRING
         g = Graph(directed=False)
-        g.add_vertex()
-
-        if self.mode == "up_genes":
-            adj_list = self.adjac_list_up
-            gene_set = self.up_genes + self.up_not_in_STRING
-        else:
-            adj_list = self.adjac_list_down
-            gene_set = self.down_genes + self.down_not_in_STRING
-
+        g.add_vertex(n=len(gene_set))
+        print(len(gene_set))
+        vprop_proteins = g.new_vp("string")
+        for i in range(len(gene_set)):
+            vprop_proteins[i] = gene_set[i]
+        g.vertex_properties['name_proteins'] = vprop_proteins
+        """
         adj_list_int = []
-        for ind_i, line in enumerate(adj_list):
+        for ind_i, line in enumerate(self.adj_list.items()):
             temp_tuple = []
             for ind_j, word in enumerate(line):
                 for ind_k, gene in enumerate(gene_set):
                     if word == gene:
                         temp_tuple.append(ind_k)
-            adj_list_int.append(tuple(temp_tuple))
-        g.add_vertex(len(gene_set) - 1)
-        g.add_edge_list(adj_list_int)
-        self.graph = g
 
+            adj_list_int.append(tuple(temp_tuple))
+        """
+        #g.add_edge_list(self.adjac_list)
+        print(g.vertices())
+        self.graph = g
+        print(g.vertex(10))
+        """
+        self.trust_map = g.new_edge_property("double")
+        if self.mode == "up_genes":
+            for gene in zip(self.trust_array, g.edges()):
+                for edge in gene:
+                    #self.trust_map[g.vertex(ind)]
+                    pass
+        else:
+            self.trust_map = g.new_edge_property("vector<double>")
+            for ind, vert in enumerate(self.graph.vertices()):
+                pass
+        """
         return g
 
     def writing_adj_lists(self):
@@ -250,3 +242,7 @@ class protein_network:
 
         return graph_draw(graph, output=file)
 
+up_request, down_request, up_FC, down_FC = signature_extractor("~/Downloads/DE_neuron_fb_deseq2_edger.txt")
+trial = protein_network(0.0, up_request, up_FC)
+graph = trial.creating_network()
+trial.visualising_graph("ex_1.png")
