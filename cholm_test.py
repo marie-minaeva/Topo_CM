@@ -2,14 +2,14 @@ from scipy import stats
 import pandas as pd
 import numpy as np
 import seaborn as sns
+from standart_chemicals_extraction import *
 
 def kolm_test(cmap_db, pref):
-    cfm_db = pd.read_csv("~/Topo_Camp/Data/intersection_of_CFM_and_L1000FWD.csv")
     dist = []
     cids = []
-    cfm_db["CID"] = [str(cid) for cid in cfm_db["CID"]]
+    cids_cur = stand_chems("Fibroblasts", "Induced Cardiomyocytes")
     for ind, chem in enumerate(cmap_db['pubchem_id']):
-        if chem in list(cfm_db["CID"]):
+        if chem in cids_cur:
             cids.append(chem)
             dist.append(cmap_db['cosine_dist'].loc[ind])
     statistics = []
