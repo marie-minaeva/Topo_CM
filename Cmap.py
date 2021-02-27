@@ -1,23 +1,47 @@
 import time
-
+from collections import *
 from joblib import Parallel, delayed
 from scipy.spatial import distance
 
 from BD_signature_parser import *
 from metric_calculator import *
-from cmap import decomposition
+#from cmap import decomposition
 import numpy as np
 from gtf_parser import *
+from signature_extractor import *
+
+
+def decomposition( data):
+    vector = []
+    for j in range(len(data)):
+        out_vector_1 = []
+        out_vector_2 = []
+        for gene, val in data[j].items():
+            if len(val) == 2:
+
+                out_vector_1.append(1.0)
+                out_vector_2.append(1.0)
+            if len(val) == 1 and val[0] == 0:
+                print("Here 3")
+                out_vector_1.append(1.0)
+                out_vector_2.append(0.0)
+            if len(val) == 1 and val[0] == 1:
+                print("Here 4")
+                out_vector_1.append(0.0)
+                out_vector_2.append(1.0)
+
+        vector.append(out_vector_1)
+        vector.append(out_vector_2)
+    return vector
 
 class TopoCMap:
 
-    def __init__(self, up_request, down_request, db, mode, file):
-        self.up_request = up_request
-        self.down_request = down_request
+    def __init__(self, db, mode, file):
+        self.up_request, self.down_request, self.up_FC, self.down_FC = signature_extractor(file)
         self.db = db
         self.mode = mode
-        self.metrics_up = centrality_metrics(file, mode="up_genes", score=0.1).metric_calculator
-        self.metrics_down = centrality_metrics(file, mode="down_genes", score=0.1).metric_calculator
+        self.metrics_up = centrality_metrics(0.1, self.up_request, self.up_FC).metric_calculator()
+        self.metrics_down = centrality_metrics(0.1, self.down_request, self.down_FC).metric_calculator()
         self.inf_score_up = None
         self.inf_score_down = None
 
@@ -32,10 +56,8 @@ class TopoCMap:
             #set_1 = list(set(self.down_request + db_down))
             #set_2 = list(set(self.up_request + db_up))
 
-        set_1 = dict.fromkeys(list(set(self.down_request + db_up)), [])
-        set_2 = dict.fromkeys(list(set(self.up_request + db_down)), [])
-        print(set_1)
-        print(set_2)
+        set_1 = defaultdict(list)
+        set_2 = defaultdict(list)
         for gene in self.down_request:
             set_1[gene].append(0)
 
@@ -47,13 +69,14 @@ class TopoCMap:
 
         for gene in db_down:
             set_2[gene].append(1)
-
+        print(len(set_1), len(set_2))
 
         return set_1, set_2
 
     def influence_score(self, weights):
         inf_scores_up = []
         inf_scores_down = []
+        print(self.metrics_up)
         inf_scores_up.append(self.metrics_up.loc[0])
         """
         for i in range(1, 7):
@@ -68,19 +91,16 @@ class TopoCMap:
         self.inf_score_down = inf_scores_down
 
 
-    def current_scores(self, spaces):
+    def current_scores(self, spaces, inf_score):
         ## говорящие названия и описания классов
-        inf_scores = [self.inf_score_up, self.inf_score_down]
         #inf_scores = self.inf_score_up + self.inf_score_down
         output = []
-
-        for  ind, inf_score in enumerate(inf_scores):
-            output.append([])
-            for sp_gene in spaces[ind]:
-                if sp_gene in inf_score[0]:
-                    output[ind].append(inf_score[1][inf_score[0].index(sp_gene)])
-                else:
-                    output[ind].append(1.0)
+        inf_score[0] = list(inf_score[0])
+        for sp_gene in spaces:
+            if sp_gene in inf_score[0]:
+                output.append(inf_score[1][inf_score[0].index(sp_gene)])
+            else:
+                output.append(1.0)
         """
         for sp_gene in spaces:
             if sp_gene in inf_scores[0]:
@@ -95,14 +115,15 @@ class TopoCMap:
         set_1, set_2 = self.space_finding(db_up, db_down)
         #data = [(self.up_request, set_2), (db_down, set_2), (self.down_request, set_1), (db_up, set_1)]
         #data = [(self.up_request, space), (db_down, space), (self.down_request, space), (db_up, space)]
-        data = [set_2, set_1]
-        results = decomposition(data)
         spaces = [set_2, set_1]
-        scores = self.current_scores(spaces)
-        cos1 = distance.cosine(results[1], results[3], scores[1])
-        cos2 = distance.cosine(results[5], results[7], scores[0])
+        results = decomposition(spaces)
+        scores = []
+        data = [self.inf_score_down, self.inf_score_up]
+        for ind in range(len(spaces)):
+            scores.append(self.current_scores(spaces[ind], data[ind]))
+        cos1 = distance.cosine(results[0], results[1], scores[0])
+        cos2 = distance.cosine(results[2], results[3], scores[1])
         cosine_dist = 0.5 * (cos1 + cos2)
-        print(cosine_dist)
 
         return cosine_dist
 
