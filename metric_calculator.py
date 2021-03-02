@@ -23,15 +23,15 @@ class centrality_metrics(protein_network) :
         metrics.append(cur)
         metrics.append([gene for gene in pagerank(self.graph)])
         metrics.append([gene for gene in betweenness(self.graph)[0]])  ##одинаковые
-        metrics.append([gene for gene in eigenvector(self.graph, max_iter=1e6)[1]])  ##одинаковые
+        metrics.append([gene for gene in eigenvector(self.graph, max_iter=1e4)[1]])  ##одинаковые
         metrics.append([gene for gene in closeness(self.graph)])
         metrics.append([gene for gene in katz(self.graph)])
-        try :
-            metrics.append([gene for gene in hits(self.graph, max_iter=1e6)[1]])  # одинаковые
+        try:
+            metrics.append([gene for gene in hits(self.graph, max_iter=1e4)[1]])  # одинаковые
             #metrics.append([gene for gene in hits(self.graph, max_iter=1e6)[2]])  # одинаковые
-        except ZeroDivisionError :
+        except ZeroDivisionError:
             print("Cannot calculate Hits metrics because of a float division by zero")
-        metrics.append([gene for gene in eigentrust(self.graph, self.graph.edge_properties["scores"])])
+        metrics.append([gene for gene in eigentrust(self.graph, self.graph.edge_properties["scores"], max_iter=1e4)])
         # metrics.append([gene for gene in trust_transitivity(self.graph, self.graph.edge_properties["scores"])])
         metrics_1 = pd.DataFrame(metrics[1 :]).T
         metrics_1 = metrics_1.fillna(1.0)

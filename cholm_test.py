@@ -4,14 +4,19 @@ import numpy as np
 import seaborn as sns
 from standart_chemicals_extraction import *
 
-def kolm_test(cmap_db, pref):
+def kolm_test(file, pref):
     dist = []
     cids = []
-    cids_cur = stand_chems("Fibroblasts", "Induced Cardiomyocytes")
+    cmap_db = pd.read_csv(file)
+    cids_cur = stand_chems("Fibroblasts", "Induced Neurons")
+    cids_cur = [int(cid) for cid in cids_cur]
+    cids_cur = [str(cid) for cid in cids_cur]
     for ind, chem in enumerate(cmap_db['pubchem_id']):
-        if chem in cids_cur:
-            cids.append(chem)
-            dist.append(cmap_db['cosine_dist'].loc[ind])
+        for chem_1 in cids_cur:
+            if chem == chem_1:
+                print(chem, chem_1)
+                cids.append(chem)
+                dist.append(cmap_db['cosine_dist'].loc[ind])
     statistics = []
     for i in range(10):
         dist_rand = np.random.choice(list(cmap_db['cosine_dist']), len(dist))

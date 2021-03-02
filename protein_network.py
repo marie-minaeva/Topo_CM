@@ -30,7 +30,7 @@ class protein_network:
 
         # Set parameters
 
-        my_genes = self.genes[:100]
+        my_genes = self.genes
         genes_in_string = []
 
         for gene in tqdm.tqdm(my_genes):

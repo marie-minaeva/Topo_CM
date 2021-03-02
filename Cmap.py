@@ -66,7 +66,7 @@ class TopoCMap:
 
         for gene in db_down:
             set_2[gene].append(1)
-        print(len(set_1), len(set_2))
+        #print(len(set_1), len(set_2))
 
         return set_1, set_2
 
@@ -79,10 +79,10 @@ class TopoCMap:
         for i in range(1, 7):
             print(np.std(list(self.metrics_up.loc[i])))
         """
-        vector = (np.array(list(self.metrics_up.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_up.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_up.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_up.loc[4]))*weights[3] + 1) * (np.array(list(self.metrics_up.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_up.loc[6]))*weights[5] + 1) + weights[6]
+        vector = (np.array(list(self.metrics_up.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_up.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_up.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_up.loc[4]))*weights[3] + 1) * (np.array(list(self.metrics_up.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_up.loc[6]))*weights[5] + 1)*(np.array(list(self.metrics_up.loc[7]))*weights[6] + 1)*(np.array(list(self.metrics_up.loc[8]))*weights[7] + 1) + weights[8]
         inf_scores_up.append(list(vector))
         inf_scores_down.append(self.metrics_down.loc[0])
-        vector = (np.array(list(self.metrics_down.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_down.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_down.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_down.loc[4]))*weights[3]  + 1) * (np.array(list(self.metrics_down.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_down.loc[6]))*weights[5] + 1) + weights[6]
+        vector = (np.array(list(self.metrics_down.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_down.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_down.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_down.loc[4]))*weights[3]  + 1) * (np.array(list(self.metrics_down.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_down.loc[6]))*weights[5] + 1)*(np.array(list(self.metrics_down.loc[7]))*weights[6] + 1)*(np.array(list(self.metrics_down.loc[8]))*weights[7] + 1) + weights[8]
         inf_scores_down.append(list(vector))
         self.inf_score_up = inf_scores_up
         self.inf_score_down = inf_scores_down
