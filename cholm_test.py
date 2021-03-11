@@ -9,7 +9,6 @@ def kolm_test(file, pref):
     cids = []
     cmap_db = pd.read_csv(file)
     cids_cur = stand_chems("Fibroblasts", "Induced Neurons")
-    cids_cur = [int(cid) for cid in cids_cur]
     cids_cur = [str(cid) for cid in cids_cur]
     for ind, chem in enumerate(cmap_db['pubchem_id']):
         for chem_1 in cids_cur:

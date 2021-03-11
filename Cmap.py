@@ -11,7 +11,7 @@ from gtf_parser import *
 from signature_extractor import *
 
 
-def decomposition( data):
+def decomposition(data):
     vector = []
     for j in range(len(data)):
         out_vector_1 = []
@@ -30,6 +30,18 @@ def decomposition( data):
         vector.append(out_vector_1)
         vector.append(out_vector_2)
     return vector
+
+def inf_score_expression(matrix, weights):
+    vector = (np.array(list(matrix.loc[1])) * weights[0] + 1) * (
+                np.array(list(matrix.loc[2])) * weights[1] + 1) * (
+                         np.array(list(matrix.loc[3])) * weights[2] + 1) * (
+                         np.array(list(matrix.loc[4])) * weights[3] + 1) * (
+                         np.array(list(matrix.loc[5])) * weights[4] + 1) * (
+                         np.array(list(matrix.loc[6])) * weights[5] + 1) * (
+                         np.array(list(matrix.loc[7])) * weights[6] + 1) * (
+                         np.array(list(matrix.loc[8])) * weights[7] + 1) + weights[8]
+    return vector
+
 
 class TopoCMap:
 
@@ -79,11 +91,9 @@ class TopoCMap:
         for i in range(1, 7):
             print(np.std(list(self.metrics_up.loc[i])))
         """
-        vector = (np.array(list(self.metrics_up.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_up.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_up.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_up.loc[4]))*weights[3] + 1) * (np.array(list(self.metrics_up.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_up.loc[6]))*weights[5] + 1)*(np.array(list(self.metrics_up.loc[7]))*weights[6] + 1)*(np.array(list(self.metrics_up.loc[8]))*weights[7] + 1) + weights[8]
-        inf_scores_up.append(list(vector))
+        inf_scores_up.append(list(inf_score_expression(self.metrics_up)))
         inf_scores_down.append(self.metrics_down.loc[0])
-        vector = (np.array(list(self.metrics_down.loc[1]))*weights[0] + 1) * (np.array(list(self.metrics_down.loc[2]))*weights[1] + 1) * (np.array(list(self.metrics_down.loc[3]))*weights[2] + 1) * (np.array(list(self.metrics_down.loc[4]))*weights[3]  + 1) * (np.array(list(self.metrics_down.loc[5]))*weights[4] + 1)*(np.array(list(self.metrics_down.loc[6]))*weights[5] + 1)*(np.array(list(self.metrics_down.loc[7]))*weights[6] + 1)*(np.array(list(self.metrics_down.loc[8]))*weights[7] + 1) + weights[8]
-        inf_scores_down.append(list(vector))
+        inf_scores_down.append(list(inf_score_expression(self.metrics_up)))
         self.inf_score_up = inf_scores_up
         self.inf_score_down = inf_scores_down
 
@@ -94,17 +104,11 @@ class TopoCMap:
         output = []
         inf_score[0] = list(inf_score[0])
         for sp_gene in spaces:
-            if sp_gene in inf_score[0]:
+            if sp_gene in inf_score[0] and inf_score[1][inf_score[0].index(sp_gene)]:
                 output.append(inf_score[1][inf_score[0].index(sp_gene)])
             else:
                 output.append(1.0)
-        """
-        for sp_gene in spaces:
-            if sp_gene in inf_scores[0]:
-                output.append(inf_scores[1][inf_scores[0].index(sp_gene)])
-            else :
-                output.append(1.0)
-        """
+
         return output
 
     def cmap(self, db_up, db_down):

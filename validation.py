@@ -8,13 +8,13 @@ import numpy as np
 up_request, down_request, FC_up, FC_down = signature_extractor("~/Downloads/DE_neuron_fb_deseq2_edger.txt")
 bd_signatures, sig_names = BD_signature_parser.BD_signature_parser("/Users/littlequeen/Downloads"
                                                                    "/CD_signatures_binary_42809.gmt")
-trial = Cmap.TopoCMap(bd_signatures, "reverse", "~/Downloads/DE_neuron_fb_deseq2_edger.txt")
+trial = Cmap.TopoCMap(bd_signatures[:200], "reverse", "~/Downloads/DE_neuron_fb_deseq2_edger.txt")
 all_stat = []
 coeffs = [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]]
 
 for i in range(1):
     #coeffs.append(list(np.random.uniform(1.0, 5.0, 6)))
-    small_mol = trial.small_molec(sig_names, "~/Downloads/CD_signature_metadata.csv", "~/Downloads"
+    small_mol = trial.small_molec(sig_names[:100], "~/Downloads/CD_signature_metadata.csv", "~/Downloads"
                                                                                             "/Drugs_metadata.csv",
                                   weights=coeffs[i])
     small_mol = pd.DataFrame(small_mol)
