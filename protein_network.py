@@ -116,8 +116,6 @@ class protein_network:
         scores = defaultdict(lambda: defaultdict(list))
 
         for ind_i, line in enumerate(self.genes):
-            #adja_list[self.genes[ind_i]].append([])
-            #scores.append([])
             for ind_j, col in enumerate(self.genes):
                 for ind_k, inter in enumerate(self.interactions):
                     if line == inter[0] and col == inter[1] and float(inter[2]) >= self.score:
@@ -127,8 +125,6 @@ class protein_network:
                         elif adja_list[self.genes[ind_i]] == [] and inter[1] != "":
                             adja_list[self.genes[ind_i]].append(inter[1])
                             scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
-
-            #adja_list[self.genes[ind_i]] = list(set(adja_list[self.genes[ind_i]]))
 
         for gene in self.not_in_STRING:
             for gene_1 in self.genes + self.not_in_STRING:
