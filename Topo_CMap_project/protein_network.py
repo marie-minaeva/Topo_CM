@@ -11,12 +11,12 @@ class protein_network:
 
         self.genes = genes
         self.FC = dict(zip(self.genes, FC))
-        self.interactions = None
-        self.adjac_list = None
-        self.trust_array = None
+        self.interactions = []
+        self.adjac_list = []
+        self.trust_array = []
         self.score = score
-        self.graph = None
-        self.not_in_STRING = None
+        self.graph = []
+        self.not_in_STRING = []
 
     def data_preprocessing(self, species=9606):
 
@@ -29,8 +29,7 @@ class protein_network:
         request_url = "/".join([string_api_url, output_format, method])
 
         # Set parameters
-
-        my_genes = self.genes
+        my_genes = self.genes[:100]
         genes_in_string = []
 
         for gene in tqdm.tqdm(my_genes):

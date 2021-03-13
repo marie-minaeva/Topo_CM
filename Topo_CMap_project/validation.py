@@ -1,5 +1,5 @@
 import Cmap
-import cholm_test
+import kolm_test
 import BD_signature_parser
 from signature_extractor import *
 import pandas as pd
@@ -20,8 +20,9 @@ for i in range(1):
     small_mol = pd.DataFrame(small_mol)
     small_mol = small_mol.T
     small_mol.columns = ["sign_id", "cosine_dist", "pert_id", "pubchem_id"]
+    small_mol = small_mol.drop_duplicates()
     small_mol.to_csv("small_mol_neuron_" + str(i) + '.csv', index=False)
-    all_stat.append(cholm_test.kolm_test("small_mol_neuron_" + str(i) + '.csv', "test_1_neuron_" + str(i)))
+    all_stat.append(kolm_test.kolm_test("small_mol_neuron_" + str(i) + '.csv', "test_1_neuron_" + str(i)))
     #small_mol.to_csv("small_mol_neuron_" + str(i) + '.csv', index=False)
 
 all_stat = [" ". join(str(x)) for x in all_stat]

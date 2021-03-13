@@ -7,7 +7,7 @@ from BD_signature_parser import *
 from metric_calculator import *
 #from cmap import decomposition
 import numpy as np
-from gtf_parser import *
+#from gtf_parser import *
 from signature_extractor import *
 
 
@@ -91,9 +91,10 @@ class TopoCMap:
         for i in range(1, 7):
             print(np.std(list(self.metrics_up.loc[i])))
         """
-        inf_scores_up.append(list(inf_score_expression(self.metrics_up)))
+        inf_scores_up.append(list(inf_score_expression(self.metrics_up, weights)))
         inf_scores_down.append(self.metrics_down.loc[0])
-        inf_scores_down.append(list(inf_score_expression(self.metrics_up)))
+        inf_scores_down.append(list(inf_score_expression(self.metrics_down, weights)))
+        print(inf_scores_up)
         self.inf_score_up = inf_scores_up
         self.inf_score_down = inf_scores_down
 
@@ -104,11 +105,13 @@ class TopoCMap:
         output = []
         inf_score[0] = list(inf_score[0])
         for sp_gene in spaces:
-            if sp_gene in inf_score[0] and inf_score[1][inf_score[0].index(sp_gene)]:
+            if sp_gene in inf_score[0]:
                 output.append(inf_score[1][inf_score[0].index(sp_gene)])
             else:
                 output.append(1.0)
-
+        for ind, val in enumerate(output):
+            if np.isnan(val):
+                output[ind] = 1.0
         return output
 
     def cmap(self, db_up, db_down):
