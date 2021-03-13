@@ -8,18 +8,27 @@ def kolm_test(file, pref):
     dist = []
     cids = []
     cmap_db = pd.read_csv(file)
+    drug_meta = pd.read_csv("~/Downloads/Drugs_metadata.csv")
     cids_cur = stand_chems("Fibroblasts", "Induced Neurons")
     cids_cur = [float(cid) for cid in cids_cur]
-    for ind, chem in enumerate(cmap_db['pubchem_id']):
+    pert_cur = []
+    for ind, chem in enumerate(drug_meta['pubchem_cid']):
         for chem_1 in cids_cur:
-            print(chem, chem_1)
             try:
-                if chem == chem_1:
+                if int(chem) == int(chem_1) :
                     print(chem, chem_1)
-                    cids.append(chem)
-                    dist.append(cmap_db['cosine_dist'].loc[ind])
+                    pert_cur.append(drug_meta['pert_id'].loc[ind])
             except ValueError:
                 print(chem, type(chem))
+
+
+    for ind, chem in enumerate(cmap_db['pert_id']):
+        for chem_1 in pert_cur:
+            print(chem, chem_1)
+            if chem == chem_1:
+                print(chem, chem_1)
+                cids.append(chem)
+                dist.append(cmap_db['cosine_dist'].loc[ind])
 
     print(dist)
     statistics = []
