@@ -30,6 +30,7 @@ class centrality_metrics(protein_network) :
             metrics.append([gene for gene in hits(self.graph, max_iter=1e4)[1]])  # одинаковые
             #metrics.append([gene for gene in hits(self.graph, max_iter=1e6)[2]])  # одинаковые
         except ZeroDivisionError:
+            metrics.append([np.nan for gene in range(len(metrics[0]))])  # одинаковые
             print("Cannot calculate Hits metrics because of a float division by zero")
         metrics.append([gene for gene in eigentrust(self.graph, self.graph.edge_properties["scores"], max_iter=1e4)])
         # metrics.append([gene for gene in trust_transitivity(self.graph, self.graph.edge_properties["scores"])])

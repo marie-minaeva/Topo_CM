@@ -15,18 +15,15 @@ def kolm_test(file, pref):
     for ind, chem in enumerate(drug_meta['pubchem_cid']):
         for chem_1 in cids_cur:
             try:
-                if int(chem) == int(chem_1) :
-                    print(chem, chem_1)
+                if int(chem) == int(chem_1):
                     pert_cur.append(drug_meta['pert_id'].loc[ind])
             except ValueError:
-                print(chem, type(chem))
+                continue
 
 
     for ind, chem in enumerate(cmap_db['pert_id']):
         for chem_1 in pert_cur:
-            print(chem, chem_1)
             if chem == chem_1:
-                print(chem, chem_1)
                 cids.append(chem)
                 dist.append(cmap_db['cosine_dist'].loc[ind])
 
