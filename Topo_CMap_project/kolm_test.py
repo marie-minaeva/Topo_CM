@@ -29,11 +29,14 @@ def kolm_test(file, pref):
 
     print(dist)
     statistics = []
+    mean_1 = np.mean(dist)
+    means = []
     for i in range(10):
         dist_rand = np.random.choice(list(cmap_db['cosine_dist']), len(dist))
+        means.append(np.mean(dist_rand))
         stat, pval = stats.ks_2samp(dist, dist_rand)
         statistics.append((stat, pval))
         sns_plot = sns.displot([dist, dist_rand], kde=True)
         sns_plot.savefig(pref+str(i)+".png")
-
-    return statistics
+    mean_2 = np.mean(means)
+    return statistics, mean_1, mean_2
