@@ -1,11 +1,12 @@
 from protein_network import *
 from graph_tool.centrality import *
-# from sklearn.preprocessing import *
+from sklearn.preprocessing import *
 import pandas as pd
 from signature_extractor import *
 from pathlib import Path
 import argparse
 import numpy as np
+from scipy.stats import zscore
 
 
 class centrality_metrics(protein_network) :
@@ -22,26 +23,37 @@ class centrality_metrics(protein_network) :
             cur.append(np.abs(self.FC[gene]))
         metrics.append(cur)
         metrics.append([gene for gene in pagerank(self.graph)])
+        for gene in self.not_in_STRING:
+            metrics[2].append(0.0)
         metrics.append([gene for gene in betweenness(self.graph)[0]])  ##одинаковые
+        for gene in self.not_in_STRING:
+            metrics[3].append(0.0)
         metrics.append([gene for gene in eigenvector(self.graph, max_iter=1e4)[1]])  ##одинаковые
+        for gene in self.not_in_STRING:
+            metrics[4].append(0.0)
         metrics.append([gene for gene in closeness(self.graph)])
+        for gene in self.not_in_STRING:
+            metrics[5].append(0.0)
         metrics.append([gene for gene in katz(self.graph)])
+        for gene in self.not_in_STRING:
+            metrics[6].append(0.0)
         try:
             metrics.append([gene for gene in hits(self.graph, max_iter=1e4)[1]])  # одинаковые
-            #metrics.append([gene for gene in hits(self.graph, max_iter=1e6)[2]])  # одинаковые
         except ZeroDivisionError:
-            metrics.append([np.nan for gene in range(len(metrics[0]))])  # одинаковые
+            metrics.append([np.nan for gene in range(len(self.genes))])  # одинаковые
             print("Cannot calculate Hits metrics because of a float division by zero")
+        for gene in self.not_in_STRING:
+            metrics[7].append(0.0)
         metrics.append([gene for gene in eigentrust(self.graph, self.graph.edge_properties["scores"], max_iter=1e4)])
-        # metrics.append([gene for gene in trust_transitivity(self.graph, self.graph.edge_properties["scores"])])
+        for gene in self.not_in_STRING:
+            metrics[8].append(0.0)
         metrics_1 = pd.DataFrame(metrics[1:]).T
+        scaler = StandardScaler()
+        cur = scaler.fit_transform(metrics_1)
+        metrics_1[0] = np.abs(cur.T[0])
+
         #metrics_1 = metrics_1.fillna(1.0) ### убрать и сделать в подсчете инф_скора if inf_score==Nan inf_score = 1.0
-        # scaler = StandardScaler()
-        # metrics_1 = scaler.fit_transform(metrics_1)
         # ВРЕМЕННО УБРАТЬ НОРМАЛИЗАЦИЮ
-        n_nzeros = metrics_1.ne(0).sum(axis=0)
-        print(n_nzeros)
-        # print(pd.DataFrame(metrics_1.T).describe())
         for i in range(1, 8):
             metrics[i] = metrics_1[i - 1]
         metrics = pd.DataFrame(metrics)
