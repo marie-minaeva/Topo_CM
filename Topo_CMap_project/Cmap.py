@@ -64,23 +64,26 @@ class TopoCMap:
         #else:
             #set_1 = list(set(self.down_request + db_down))
             #set_2 = list(set(self.up_request + db_up))
-
-        set_1 = defaultdict(list)
-        set_2 = defaultdict(list)
+        set_1 = list(self.down_request)
+        set_2 = list(self.up_request)
+        set_1.extend(list(set(db_up).difference(set(self.down_request))))
+        set_2.extend(list(set(db_down).difference(set(self.up_request))))
+        dict_1 = defaultdict(list)
+        dict_2 = defaultdict(list)
         for gene in self.down_request:
-            set_1[gene].append(0)
+            dict_1[gene].append(0)
 
         for gene in self.up_request:
-            set_2[gene].append(0)
+            dict_2[gene].append(0)
 
         for gene in db_up:
-            set_1[gene].append(1)
+            dict_1[gene].append(0)
 
         for gene in db_down:
-            set_2[gene].append(1)
-        #print(len(set_1), len(set_2))
-
-        return set_1, set_2
+            dict_2[gene].append(0)
+        ord_dict_1 = {key: dict_1[key] for key in set_1}
+        ord_dict_2 = {key: dict_2[key] for key in set_2}
+        return ord_dict_1, ord_dict_2
 
     def influence_score(self, weights):
         inf_scores_up = []
@@ -94,24 +97,14 @@ class TopoCMap:
         inf_scores_up.append(list(inf_score_expression(self.metrics_up, weights)))
         inf_scores_down.append(self.metrics_down.loc[0])
         inf_scores_down.append(list(inf_score_expression(self.metrics_down, weights)))
-        print(inf_scores_up)
         self.inf_score_up = inf_scores_up
         self.inf_score_down = inf_scores_down
 
-
-    def current_scores(self, spaces, inf_score):
-        ## говорящие названия и описания классов
-        #inf_scores = self.inf_score_up + self.inf_score_down
-        output = []
+    @staticmethod
+    def current_scores(space, inf_score):
         inf_score[0] = list(inf_score[0])
-        for sp_gene in spaces:
-            if sp_gene in inf_score[0]:
-                output.append(inf_score[1][inf_score[0].index(sp_gene)])
-            else:
-                output.append(1.0)
-        for ind, val in enumerate(output):
-            if np.isnan(val):
-                output[ind] = 1.0
+        output = inf_score[1].copy()
+        output.extend(np.ones(len(space) - len(inf_score[0])))
         return output
 
     def cmap(self, db_up, db_down):
@@ -122,11 +115,13 @@ class TopoCMap:
         spaces = [set_2, set_1]
         results = decomposition(spaces)
         scores = []
-        data = [self.inf_score_down, self.inf_score_up]
+        data = [self.inf_score_up, self.inf_score_down]
         for ind in range(len(spaces)):
             scores.append(self.current_scores(spaces[ind], data[ind]))
-        cos1 = distance.cosine(results[0], results[1], scores[0])
-        cos2 = distance.cosine(results[2], results[3], scores[1])
+        print(scores[1])
+        print(results[3])
+        cos1 = distance.cosine(results[2], results[3], np.nan_to_num(scores[1], nan=1.0))
+        cos2 = distance.cosine(results[0], results[1], np.nan_to_num(scores[0], nan=1.0))
         cosine_dist = 0.5 * (cos1 + cos2)
 
         return cosine_dist
@@ -156,7 +151,12 @@ class TopoCMap:
                 if pert == chem:
                     chems.append(drugs['pubchem_cid'].loc[ind])
         output_data = output_data.append(pd.Series(chems), ignore_index=True)
-        ## добавить pert_name
+        chem_name = []
+        for pert in pert_ids:
+            for ind, chem in enumerate(drugs['pert_id']):
+                if pert == chem:
+                    chem_name.append(drugs['pert_iname'].loc[ind])
+        output_data = output_data.append(pd.Series(chem_name), ignore_index=True)
         return output_data
 
 ## отнормировать коэффициенты и посмотреть распределения коэффициентов для метрик
