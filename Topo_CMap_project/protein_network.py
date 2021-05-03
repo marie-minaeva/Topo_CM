@@ -1,8 +1,8 @@
 from collections import defaultdict
-
 import requests
 import tqdm
 from graph_tool.all import *
+import json
 
 
 class protein_network:
@@ -107,10 +107,53 @@ class protein_network:
 
         self.interactions = interactions
 
+    def BIOGRID_request(self):
+        request_url = "https://webservice.thebiogrid.org/" + "/interactions"
+
+        # List of genes to search for
+        geneList = self.genes  # Yeast Genes STE11 and NMD4
+        evidenceList = ["POSITIVE GENETIC"]
+
+        # These parameters can be modified to match any search criteria following
+        # the rules outlined in the Wiki: https://wiki.thebiogrid.org/doku.php/biogridrest
+        params = {
+            "accesskey" : "86ef3d2746f82a8c3644424ae4b5538c",
+            "format" : "tab2",  # Return results in TAB2 format
+            "geneList" : "|".join(geneList),  # Must be | separated
+            "searchNames" : "true",  # Search against official names
+            "includeInteractors" : "true",
+            # Set to true to get any interaction involving EITHER gene, set to false to get interactions between genes
+            "taxId" : 559292,  # Limit to Homo Sapiens
+            "evidenceList" : "|".join(evidenceList),  # Exclude these two evidence types
+            "includeEvidence" : "true",
+            # If false "evidenceList" is evidence to exclude, if true "evidenceList" is evidence to show
+            "includeHeader" : "true",
+            "includeInteractors" : "false"
+        }
+
+        r = requests.post(request_url, params=params)
+        interaction = r.text
+        interactions =[]
+        for line in interaction.strip().split("\n"):
+            l = line.strip().split("\t")
+            try:
+                p1, p2 = l[7], l[8]
+                # filter the interaction according to experimental score
+                experimental_score = 1.0
+                interactions.append((p1, p2, experimental_score))
+            except IndexError:
+                print("Getting an error")
+                print(interaction)
+        print(interactions)
+        self.interactions.extend(interactions[1:])
+
+
+        # Pretty print out the results
 
     def creating_adj_list(self):
 
         self.API_request()
+        self.BIOGRID_request()
         adja_list = defaultdict(list)
         scores = defaultdict(lambda: defaultdict(list))
 
@@ -124,11 +167,12 @@ class protein_network:
                         elif adja_list[self.genes[ind_i]] == [] and inter[1] != "":
                             adja_list[self.genes[ind_i]].append(inter[1])
                             scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
-
+        """
         for gene in self.not_in_STRING:
             for gene_1 in self.genes + self.not_in_STRING:
                 adja_list[gene] = []
                 scores[gene][gene_1] = []
+        """
         self.adjac_list = adja_list
         self.trust_array = scores
 
@@ -137,7 +181,8 @@ class protein_network:
     def creating_network(self):
 
         self.creating_adj_list()
-        gene_set = self.genes + self.not_in_STRING
+        #gene_set = self.genes + self.not_in_STRING
+        gene_set = self.genes
         g = Graph(directed=False)
         g.add_vertex(n=len(gene_set))
         print(len(gene_set))
