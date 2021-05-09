@@ -17,6 +17,7 @@ class protein_network:
         self.score = score
         self.graph = []
         self.not_in_STRING = []
+        self.in_biogrid = None
 
     def data_preprocessing(self, species=9606):
 
@@ -29,7 +30,7 @@ class protein_network:
         request_url = "/".join([string_api_url, output_format, method])
 
         # Set parameters
-        my_genes = self.genes[:100]
+        my_genes = self.genes
         genes_in_string = []
 
         for gene in tqdm.tqdm(my_genes):
@@ -134,18 +135,27 @@ class protein_network:
         r = requests.post(request_url, params=params)
         interaction = r.text
         interactions =[]
+        genes = []
         for line in interaction.strip().split("\n"):
             l = line.strip().split("\t")
             try:
                 p1, p2 = l[7], l[8]
                 # filter the interaction according to experimental score
                 experimental_score = 1.0
+                genes.append(p1)
                 interactions.append((p1, p2, experimental_score))
             except IndexError:
                 print("Getting an error")
                 print(interaction)
         print(interactions)
         self.interactions.extend(interactions[1:])
+        print(genes)
+        self.genes.extend(genes[1:])
+        try:
+            self.not_in_STRING.remove(genes[1 :])
+        except ValueError:
+            pass
+        self.in_biogrid = genes[1:]
 
 
         # Pretty print out the results
@@ -156,17 +166,18 @@ class protein_network:
         self.BIOGRID_request()
         adja_list = defaultdict(list)
         scores = defaultdict(lambda: defaultdict(list))
+        genes = self.genes
 
-        for ind_i, line in enumerate(self.genes):
-            for ind_j, col in enumerate(self.genes):
+        for ind_i, line in enumerate(genes):
+            for ind_j, col in enumerate(genes):
                 for ind_k, inter in enumerate(self.interactions):
                     if line == inter[0] and col == inter[1] and float(inter[2]) >= self.score:
-                        if adja_list[self.genes[ind_i]] != [] and adja_list[self.genes[ind_i]][-1] != inter[1]:
-                            adja_list[self.genes[ind_i]] .append(inter[1])
-                            scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
-                        elif adja_list[self.genes[ind_i]] == [] and inter[1] != "":
-                            adja_list[self.genes[ind_i]].append(inter[1])
-                            scores[self.genes[ind_i]][inter[1]].append(float(inter[2]))
+                        if adja_list[genes[ind_i]] != [] and adja_list[genes[ind_i]][-1] != inter[1]:
+                            adja_list[genes[ind_i]] .append(inter[1])
+                            scores[genes[ind_i]][inter[1]].append(float(inter[2]))
+                        elif adja_list[genes[ind_i]] == [] and inter[1] != "":
+                            adja_list[genes[ind_i]].append(inter[1])
+                            scores[genes[ind_i]][inter[1]].append(float(inter[2]))
         """
         for gene in self.not_in_STRING:
             for gene_1 in self.genes + self.not_in_STRING:
@@ -217,3 +228,4 @@ class protein_network:
             graph = self.creating_network()
 
         return graph_draw(graph, output=file)
+
