@@ -2,37 +2,13 @@ from collections import defaultdict
 import requests
 import tqdm
 from graph_tool.all import *
+import json
 
 
-class ProteinNetwork:
-    """
-    A class is used to construct PPI network
-
-    Attributes:
-        genes (:obj:`list` of:obj:`str`): list of either up or down regulated genes of request signature
-        FC (dict): list of logFC of either up or down regulated genes of request signature
-        interactions (:obj:`list` of:obj:`tuple` of:obj:`str` or `float`): list of interactions with confidence
-            scores
-        adjac_list (:obj:`collections.defaultdict`): adjacency lists for each gene
-        trust_array (:obj:`collections.defaultdict` of:obj:`collections.defaultdict`): a matrix of confident scores
-            for interactions between each protein
-        score (float): the lowest confident score taken into consideration
-        graph (:obj: `graph_tool.Graph`): a graph of PPI network
-        not_in_STRING (:obj:`list` of:obj:`str`): genes that were not found in STRING
-        in_biogrid (:obj:`list` of:obj:`str`): genes that were found in BioGRID
-
-    """
+class protein_network:
 
     def __init__(self, score, genes, FC):
-        """
-        Declares class attributes
 
-        Args:
-            score (float): the lowest confident score taken into consideration
-            genes (:obj:`list` of:obj:`str`): list of either up or down regulated genes of request signature
-            FC (dict): list of logFC of either up or down regulated genes of request signature
-
-        """
         self.genes = genes
         self.FC = dict(zip(self.genes, FC))
         self.interactions = []
@@ -44,13 +20,6 @@ class ProteinNetwork:
         self.in_biogrid = None
 
     def data_preprocessing(self, species=9606):
-        """
-        Preprocesses genes, checks whether gene is in STRING or not
-
-        Args:
-            species (int, optional): specie identifier
-
-        """
 
         string_api_url = "https://string-db.org/api"
         output_format = "tsv-no-header"
@@ -97,10 +66,7 @@ class ProteinNetwork:
         print(len(genes_in_string))
 
     def API_request(self):
-        """
-        Conducts API request to STRING for preprocessed genes
 
-        """
         # Preprocessing genes
         species = 9606
         self.data_preprocessing()
@@ -143,11 +109,6 @@ class ProteinNetwork:
         self.interactions = interactions
 
     def BIOGRID_request(self):
-        """
-
-        Conducts API request to BioGRID
-
-        """
         request_url = "https://webservice.thebiogrid.org/" + "/interactions"
 
         # List of genes to search for
@@ -157,22 +118,23 @@ class ProteinNetwork:
         # These parameters can be modified to match any search criteria following
         # the rules outlined in the Wiki: https://wiki.thebiogrid.org/doku.php/biogridrest
         params = {
-            "accesskey": "86ef3d2746f82a8c3644424ae4b5538c",
-            "format": "tab2",  # Return results in TAB2 format
-            "geneList": "|".join(geneList),  # Must be | separated
-            "searchNames": "true",  # Search against official names
-            "includeInteractors": "true",
+            "accesskey" : "86ef3d2746f82a8c3644424ae4b5538c",
+            "format" : "tab2",  # Return results in TAB2 format
+            "geneList" : "|".join(geneList),  # Must be | separated
+            "searchNames" : "true",  # Search against official names
+            "includeInteractors" : "true",
             # Set to true to get any interaction involving EITHER gene, set to false to get interactions between genes
-            "taxId": 559292,  # Limit to Homo Sapiens
-            "evidenceList": "|".join(evidenceList),  # Exclude these two evidence types
-            "includeEvidence": "true",
+            "taxId" : 559292,  # Limit to Homo Sapiens
+            "evidenceList" : "|".join(evidenceList),  # Exclude these two evidence types
+            "includeEvidence" : "true",
             # If false "evidenceList" is evidence to exclude, if true "evidenceList" is evidence to show
-            "includeHeader": "true"
+            "includeHeader" : "true",
+            "includeInteractors" : "false"
         }
 
         r = requests.post(request_url, params=params)
         interaction = r.text
-        interactions = []
+        interactions =[]
         genes = []
         for line in interaction.strip().split("\n"):
             l = line.strip().split("\t")
@@ -190,17 +152,15 @@ class ProteinNetwork:
         print(genes)
         self.genes.extend(genes[1:])
         try:
-            self.not_in_STRING.remove(genes[1:])
+            self.not_in_STRING.remove(genes[1 :])
         except ValueError:
             pass
         self.in_biogrid = genes[1:]
 
+
+        # Pretty print out the results
+
     def creating_adj_list(self):
-        """
-
-        Parses self.interactions to create adjacency list and matrix of confidence scores
-
-        """
 
         self.API_request()
         self.BIOGRID_request()
@@ -227,16 +187,12 @@ class ProteinNetwork:
         self.adjac_list = adja_list
         self.trust_array = scores
 
+
+
     def creating_network(self):
-        """
-        Constructs a graph of PPI network based on adjacency list
 
-        Returns:
-            g (:obj:`graph_tool.Graph`): graph of reconstructed PPI network
-
-        """
         self.creating_adj_list()
-        # gene_set = self.genes + self.not_in_STRING
+        #gene_set = self.genes + self.not_in_STRING
         gene_set = self.genes
         g = Graph(directed=False)
         g.add_vertex(n=len(gene_set))
@@ -256,30 +212,15 @@ class ProteinNetwork:
         return g
 
     def writing_adj_lists(self):
-        """
-
-        Writes graph into file
-
-        """
 
         if self.graph:
             graph = self.graph
         else:
             graph = self.creating_network()
-        # добавить директорию для записи
+        ## добавить директорию для записи
         graph.save("~/Topo_Camp/genes.gt")
 
     def visualising_graph(self, file):
-        """
-        Visualises the graph
-
-        Args:
-            file (str): path to file where to save visualised graph
-
-        Returns:
-            function: function to draw the graph
-
-        """
 
         if self.graph:
             graph = self.graph
@@ -287,3 +228,4 @@ class ProteinNetwork:
             graph = self.creating_network()
 
         return graph_draw(graph, output=file)
+

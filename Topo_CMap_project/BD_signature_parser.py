@@ -1,15 +1,4 @@
 def BD_signature_parser(file):
-    """
-    Parses database file
-
-    Args:
-        file (str): path to the file to parse
-
-    Returns:
-        signatures (:obj:`list` of :obj:`list` of :obj:`str`): list of lists of genes
-        sig_names(:obj:`list` of :obj:`str`): names of signatures
-
-    """
     with open(file) as gmt:
         lines = gmt.readlines()
     signatures = []
